@@ -1,0 +1,29 @@
+{
+    "tokenizer": {
+        "dataset_path": "tokenizador/dadosBrutos/dados_training_bpe.txt",
+        "vocab_size": 5000,
+        "outdir": "tokenizador/artifacts",
+        "dataset_text_path": "tokenizador/dadosBrutos/dados_training_modelo.txt",
+        "train_bin_path": "tokenizador/dataset/train.bin",
+        "outdir_tokenizer": "tokenizador/dataset",
+        "regenerate_dataset": false
+    },
+    "modelo": {
+        "vocab_size": 5000,
+        "embedding_dim": 128,
+        "num_heads": 4,
+        "num_layers": 3,
+        "max_seq_len": 128,
+        "ffn_dim": 512,
+        "model_save_path": "treino/checkpoints/encoder.pth",
+        "config_save_path": "treino/checkpoints/config.json",
+        "seq_len": 128
+    },
+    "treino": {
+        "batch_size": 8,
+        "num_epochs": 50,
+        "learning_rate": 0.0005,
+        "device": "auto",
+        "seed": 42
+    }
+}
