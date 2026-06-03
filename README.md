@@ -93,3 +93,11 @@ python3 treino/main.py --config config.yaml
 python3 inferencia/main.py --config config.yaml
 python3 re-treino/main.py --config config.yaml
 ```
+
+
+## A fazer
+
+```md
+Depois, se quiser melhorar, adaptamos o TextDataset para mascarar a loss fora de <|assistant|> ... <|eos|>.
+
+```

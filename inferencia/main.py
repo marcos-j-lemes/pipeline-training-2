@@ -183,9 +183,9 @@ def main() -> None:
     parser.add_argument("--config", default="config.yaml")
     parser.add_argument("--prompt-ids", default=None)
     parser.add_argument("--once", default=None, help="Executa uma unica resposta para o texto informado.")
-    parser.add_argument("--max-new-tokens", type=int, default=20)
+    parser.add_argument("--max-new-tokens", type=int, default=30)
     parser.add_argument("--temperature", type=float, default=0.8)
-    parser.add_argument("--delay", type=float, default=0.04)
+    parser.add_argument("--delay", type=float, default=0.01)
     args = parser.parse_args()
 
     config = load_config(resolve_path(args.config))

@@ -1,0 +1,33 @@
+{
+  "tokenizer": {
+    "dataset_path": "tokenizador/dadosBrutos/dados_training_bpe.txt",
+    "vocab_size": 5000,
+    "outdir": "/home/aluno/pipeline-training-2/re-treino/entrada",
+    "dataset_text_path": "tokenizador/dadosBrutos/dados_training_modelo.txt",
+    "train_bin_path": "/home/aluno/pipeline-training-2/re-treino/entrada/train.bin",
+    "val_bin_path": "tokenizador/dataset/val.bin",
+    "outdir_tokenizer": "tokenizador/dataset",
+    "regenerate_dataset": false
+  },
+  "modelo": {
+    "vocab_size": 5000,
+    "embedding_dim": 128,
+    "num_heads": 4,
+    "num_layers": 3,
+    "max_seq_len": 128,
+    "ffn_dim": 512,
+    "seq_len": 128,
+    "model_save_path": "/home/aluno/pipeline-training-2/re-treino/checkpoints/encoder_retreinado.pth",
+    "config_save_path": "/home/aluno/pipeline-training-2/re-treino/checkpoints/config.json",
+    "full_checkpoint_path": "/home/aluno/pipeline-training-2/re-treino/checkpoints/checkpoint_completo.pt"
+  },
+  "treino": {
+    "batch_size": 8,
+    "num_epochs": 50,
+    "learning_rate": 0.0005,
+    "device": "auto",
+    "seed": 42,
+    "num_workers": 2,
+    "regenerate_tokenizer_and_dataset": false
+  }
+}
