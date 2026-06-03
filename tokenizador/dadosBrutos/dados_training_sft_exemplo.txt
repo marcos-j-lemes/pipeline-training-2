@@ -1,0 +1,91 @@
+<|bos|>
+<|system|>
+Voce e um assistente em portugues brasileiro. Responda de forma clara, curta e util.
+<|user|>
+O que e fotossintese?
+<|assistant|>
+Fotossintese e o processo em que plantas usam luz, agua e gas carbonico para produzir energia e liberar oxigenio.
+<|eos|>
+
+<|bos|>
+<|system|>
+Voce e um assistente em portugues brasileiro. Responda em no maximo tres frases.
+<|user|>
+Explique por que beber agua e importante.
+<|assistant|>
+Beber agua ajuda o corpo a regular a temperatura, transportar nutrientes e eliminar residuos. Tambem contribui para o bom funcionamento do cerebro, dos rins e dos musculos.
+<|eos|>
+
+<|bos|>
+<|system|>
+Voce responde de modo direto e evita inventar informacoes.
+<|user|>
+Quem descobriu o Brasil?
+<|assistant|>
+Segundo a narrativa historica tradicional portuguesa, a chegada oficial ao Brasil ocorreu em 1500 com a expedicao de Pedro Alvares Cabral. Antes disso, o territorio ja era habitado por diversos povos indigenas.
+<|eos|>
+
+<|bos|>
+<|system|>
+Voce e um assistente que ajuda estudantes iniciantes.
+<|user|>
+Me de um exemplo simples de variavel em Python.
+<|assistant|>
+Uma variavel guarda um valor para ser usado depois. Exemplo: idade = 15. Nesse caso, a variavel idade guarda o numero 15.
+<|eos|>
+
+<|bos|>
+<|system|>
+Voce deve responder com uma lista curta quando o usuario pedir exemplos.
+<|user|>
+Liste tres frutas citricas.
+<|assistant|>
+- Laranja
+- Limao
+- Tangerina
+<|eos|>
+
+<|bos|>
+<|system|>
+Voce e um assistente objetivo. Se a pergunta for ampla, responda com um resumo.
+<|user|>
+O que e inteligencia artificial?
+<|assistant|>
+Inteligencia artificial e uma area da computacao que cria sistemas capazes de realizar tarefas que normalmente exigem inteligencia humana, como reconhecer imagens, entender texto, tomar decisoes e gerar respostas.
+<|eos|>
+
+<|bos|>
+<|system|>
+Voce responde em tom educado e didatico.
+<|user|>
+Como posso estudar melhor?
+<|assistant|>
+Separe horarios curtos de estudo, revise o conteudo com frequencia e faca exercicios praticos. Tambem ajuda explicar o assunto com suas proprias palavras.
+<|eos|>
+
+<|bos|>
+<|system|>
+Voce deve admitir quando nao souber.
+<|user|>
+Qual sera o preco exato do dolar daqui a dois anos?
+<|assistant|>
+Nao tenho como saber o preco exato do dolar daqui a dois anos. Esse valor depende de muitos fatores economicos e politicos que podem mudar ao longo do tempo.
+<|eos|>
+
+<|bos|>
+<|system|>
+Voce resume textos mantendo a ideia principal.
+<|user|>
+Resuma: A agua e essencial para a vida, participa de reacoes quimicas do corpo, ajuda no transporte de substancias e regula a temperatura corporal.
+<|assistant|>
+A agua e essencial porque participa de funcoes vitais, transporta substancias e ajuda a regular a temperatura do corpo.
+<|eos|>
+
+<|bos|>
+<|system|>
+Voce transforma pedidos vagos em respostas praticas.
+<|user|>
+Quero aprender programacao. Por onde comeco?
+<|assistant|>
+Comece por logica de programacao e depois escolha uma linguagem simples, como Python. Pratique com pequenos projetos, como calculadora, lista de tarefas e jogos simples no terminal.
+<|eos|>
