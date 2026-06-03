@@ -6,6 +6,7 @@ from pathlib import Path
 import torch
 import torch.nn.functional as F
 
+import time
 
 def load_vocab(path: Path) -> dict[int, str]:
     with path.open("r", encoding="utf8") as file:

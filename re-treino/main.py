@@ -23,7 +23,11 @@ from modelo.encoder import Encoder_model, TextDataset
 from config import legacy_checkpoint_config, load_config as load_project_config
 from config import model_config as project_model_config
 from config import resolve_path
-from utils import generate_training_sample
+from utils import (
+    generate_training_sample,
+    save_periodic_checkpoint,
+    should_save_periodic_checkpoint,
+)
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -171,6 +175,27 @@ def maybe_print_generation_sample(
     print(f"[geracao epoch {epoch:03d}] modelo: {text}")
 
 
+def maybe_save_periodic_checkpoint(
+    model: Encoder_model,
+    optimizer: torch.optim.Optimizer,
+    project_config: dict[str, Any],
+    checkpoint_config: dict[str, Any],
+    epoch: int,
+    output_dir: Path,
+) -> None:
+    if not should_save_periodic_checkpoint(project_config, epoch):
+        return
+
+    save_periodic_checkpoint(
+        model=model,
+        optimizer=optimizer,
+        config=checkpoint_config,
+        checkpoint_config=project_config.get("checkpointing", {}),
+        epoch=epoch,
+        output_dir=output_dir,
+    )
+
+
 def train(config_path_arg: str = "config.yaml") -> None:
     project_config = load_project_config(config_path_arg)
     input_config_path, checkpoint_path, train_path, vocab_path, output_dir = validate_inputs(project_config)
@@ -211,6 +236,9 @@ def train(config_path_arg: str = "config.yaml") -> None:
     model = build_model(model_config, device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=float(train_config["learning_rate"]))
     start_epoch = load_model_checkpoint(model, optimizer, checkpoint_path, device)
+    checkpoint_config = dict(config)
+    checkpoint_config["checkpointing"] = project_config.get("checkpointing", {})
+    periodic_dir = output_dir / str(project_config.get("checkpointing", {}).get("directory_name", "periodicos"))
 
     print(f"Config base: {input_config_path or resolve_path(config_path_arg)}")
     print(f"Checkpoint inicial: {checkpoint_path}")
@@ -241,6 +269,14 @@ def train(config_path_arg: str = "config.yaml") -> None:
         last_epoch = epoch
         avg_loss = total_loss / max(len(loader), 1)
         print(f"epoch {epoch:03d} | loss {avg_loss:.4f}")
+        maybe_save_periodic_checkpoint(
+            model=model,
+            optimizer=optimizer,
+            project_config=project_config,
+            checkpoint_config=checkpoint_config,
+            epoch=epoch,
+            output_dir=periodic_dir,
+        )
         maybe_print_generation_sample(
             model=model,
             project_config=project_config,

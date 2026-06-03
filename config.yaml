@@ -46,6 +46,13 @@ generation:
   max_new_tokens: 50
   temperature: 0.8
 
+checkpointing:
+  enabled: true
+  interval_epochs: 10
+  directory_name: periodicos
+  save_weights_only: true
+  save_full_checkpoint: true
+
 inference:
   config_path: treino/checkpoints/config.json
   max_new_tokens: 20

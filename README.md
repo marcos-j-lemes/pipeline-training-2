@@ -41,6 +41,14 @@ Durante o treino, a secao `generation` controla amostras periodicas de texto:
 - `max_new_tokens`: quantidade de tokens gerados.
 - `temperature`: aleatoriedade da geracao.
 
+A secao `checkpointing` controla checkpoints periodicos durante treino/re-treino:
+
+- `enabled`: `true` para salvar checkpoints durante o processo, `false` para desligar.
+- `interval_epochs`: salva a cada N epochs.
+- `directory_name`: subpasta dentro de `treino/checkpoints` ou `re-treino/checkpoints`.
+- `save_weights_only`: salva `encoder_epoch_XXXX.pth`, so com pesos.
+- `save_full_checkpoint`: salva `checkpoint_epoch_XXXX.pt`, com modelo, otimizador, epoch e config.
+
 4. Inferencia
 
 ```bash

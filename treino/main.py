@@ -17,7 +17,11 @@ if str(ROOT_DIR) not in sys.path:
 
 from config import legacy_checkpoint_config, load_config, model_config, resolve_path, save_json
 from modelo.encoder import Encoder_model, TextDataset
-from utils import generate_training_sample
+from utils import (
+    generate_training_sample,
+    save_periodic_checkpoint,
+    should_save_periodic_checkpoint,
+)
 
 
 def select_device(value: str) -> torch.device:
@@ -92,6 +96,27 @@ def maybe_print_generation_sample(
     print(f"[geracao epoch {epoch:03d}] modelo: {text}")
 
 
+def maybe_save_periodic_checkpoint(
+    model: Encoder_model,
+    optimizer: torch.optim.Optimizer,
+    config: dict[str, Any],
+    checkpoint_config: dict[str, Any],
+    epoch: int,
+    output_dir: Path,
+) -> None:
+    if not should_save_periodic_checkpoint(config, epoch):
+        return
+
+    save_periodic_checkpoint(
+        model=model,
+        optimizer=optimizer,
+        config=checkpoint_config,
+        checkpoint_config=checkpoint_config.get("checkpointing", config.get("checkpointing", {})),
+        epoch=epoch,
+        output_dir=output_dir,
+    )
+
+
 def train(config_path: str) -> None:
     config = load_config(config_path)
     maybe_regenerate_dataset(config)
@@ -136,6 +161,12 @@ def train(config_path: str) -> None:
         model.parameters(),
         lr=float(train_settings["learning_rate"]),
     )
+    checkpoint_config = legacy_checkpoint_config(config)
+    checkpoint_config["checkpointing"] = config.get("checkpointing", {})
+    periodic_dir = (
+        resolve_path(model_settings["full_checkpoint_path"]).parent
+        / str(config.get("checkpointing", {}).get("directory_name", "periodicos"))
+    )
 
     print(f"info modelo: {sum(p.numel() for p in model.parameters())} parametros")
     print(f"dataset: {train_path}")
@@ -161,6 +192,14 @@ def train(config_path: str) -> None:
         last_epoch = epoch
         avg_loss = total_loss / max(len(loader), 1)
         print(f"epoch {epoch:03d} | loss {avg_loss:.4f}")
+        maybe_save_periodic_checkpoint(
+            model=model,
+            optimizer=optimizer,
+            config=config,
+            checkpoint_config=checkpoint_config,
+            epoch=epoch,
+            output_dir=periodic_dir,
+        )
         maybe_print_generation_sample(model, config, epoch, seq_len, device)
 
     model_save_path = resolve_path(model_settings["model_save_path"])
@@ -169,7 +208,6 @@ def train(config_path: str) -> None:
     model_save_path.parent.mkdir(parents=True, exist_ok=True)
     full_checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
 
-    checkpoint_config = legacy_checkpoint_config(config)
     torch.save(model.state_dict(), model_save_path)
     torch.save(
         {
