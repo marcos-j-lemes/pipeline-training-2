@@ -23,6 +23,7 @@ from modelo.encoder import Encoder_model, TextDataset
 from config import legacy_checkpoint_config, load_config as load_project_config
 from config import model_config as project_model_config
 from config import resolve_path
+from utils import generate_training_sample
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -140,6 +141,36 @@ def validate_inputs(config: dict[str, Any]) -> tuple[Path | None, Path, Path, Pa
     return (config_path if config_path.exists() else None), checkpoint_path, train_path, vocab_path, output_dir
 
 
+def maybe_print_generation_sample(
+    model: Encoder_model,
+    project_config: dict[str, Any],
+    epoch: int,
+    seq_len: int,
+    vocab_path: Path,
+    device: torch.device,
+) -> None:
+    generation_config = project_config.get("generation", {})
+    if not generation_config.get("enabled", False):
+        return
+
+    interval = int(generation_config.get("interval_epochs", 1))
+    if interval <= 0 or epoch % interval != 0:
+        return
+
+    prompt = str(generation_config.get("prompt", "Ola"))
+    text = generate_training_sample(
+        model=model,
+        vocab_path=vocab_path,
+        prompt=prompt,
+        seq_len=seq_len,
+        max_new_tokens=int(generation_config.get("max_new_tokens", 40)),
+        temperature=float(generation_config.get("temperature", 0.8)),
+        device=device,
+    )
+    print(f"[geracao epoch {epoch:03d}] prompt: {prompt!r}")
+    print(f"[geracao epoch {epoch:03d}] modelo: {text}")
+
+
 def train(config_path_arg: str = "config.yaml") -> None:
     project_config = load_project_config(config_path_arg)
     input_config_path, checkpoint_path, train_path, vocab_path, output_dir = validate_inputs(project_config)
@@ -210,6 +241,14 @@ def train(config_path_arg: str = "config.yaml") -> None:
         last_epoch = epoch
         avg_loss = total_loss / max(len(loader), 1)
         print(f"epoch {epoch:03d} | loss {avg_loss:.4f}")
+        maybe_print_generation_sample(
+            model=model,
+            project_config=project_config,
+            epoch=epoch,
+            seq_len=seq_len,
+            vocab_path=vocab_path,
+            device=device,
+        )
 
     output_dir.mkdir(parents=True, exist_ok=True)
     model_save_path = Path(config["modelo"]["model_save_path"])

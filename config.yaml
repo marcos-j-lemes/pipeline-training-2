@@ -39,6 +39,13 @@ training:
   num_workers: 2
   regenerate_tokenizer_and_dataset: false
 
+generation:
+  enabled: true
+  interval_epochs: 5
+  prompt: "Ola"
+  max_new_tokens: 50
+  temperature: 0.8
+
 inference:
   config_path: treino/checkpoints/config.json
   max_new_tokens: 20

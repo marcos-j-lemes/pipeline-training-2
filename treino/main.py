@@ -17,6 +17,7 @@ if str(ROOT_DIR) not in sys.path:
 
 from config import legacy_checkpoint_config, load_config, model_config, resolve_path, save_json
 from modelo.encoder import Encoder_model, TextDataset
+from utils import generate_training_sample
 
 
 def select_device(value: str) -> torch.device:
@@ -55,6 +56,40 @@ def maybe_regenerate_dataset(config: dict[str, Any]) -> None:
         str(resolve_path(tokenizer_config["dataset_dir"])),
         float(tokenizer_config.get("split_ratio", 0.1)),
     )
+
+
+def maybe_print_generation_sample(
+    model: Encoder_model,
+    config: dict[str, Any],
+    epoch: int,
+    seq_len: int,
+    device: torch.device,
+) -> None:
+    generation_config = config.get("generation", {})
+    if not generation_config.get("enabled", False):
+        return
+
+    interval = int(generation_config.get("interval_epochs", 1))
+    if interval <= 0 or epoch % interval != 0:
+        return
+
+    vocab_path = resolve_path(config["tokenizer"]["artifacts_dir"]) / "vocab.json"
+    if not vocab_path.exists():
+        print(f"[geracao epoch {epoch:03d}] vocab nao encontrado: {vocab_path}")
+        return
+
+    prompt = str(generation_config.get("prompt", "Ola"))
+    text = generate_training_sample(
+        model=model,
+        vocab_path=vocab_path,
+        prompt=prompt,
+        seq_len=seq_len,
+        max_new_tokens=int(generation_config.get("max_new_tokens", 40)),
+        temperature=float(generation_config.get("temperature", 0.8)),
+        device=device,
+    )
+    print(f"[geracao epoch {epoch:03d}] prompt: {prompt!r}")
+    print(f"[geracao epoch {epoch:03d}] modelo: {text}")
 
 
 def train(config_path: str) -> None:
@@ -126,6 +161,7 @@ def train(config_path: str) -> None:
         last_epoch = epoch
         avg_loss = total_loss / max(len(loader), 1)
         print(f"epoch {epoch:03d} | loss {avg_loss:.4f}")
+        maybe_print_generation_sample(model, config, epoch, seq_len, device)
 
     model_save_path = resolve_path(model_settings["model_save_path"])
     config_save_path = resolve_path(model_settings["config_save_path"])

@@ -33,6 +33,14 @@ python3 treino/main.py --config config.yaml
 
 O treino usa `tokenizer.train_bin_path`, monta o modelo com a secao `model` e salva em `treino/checkpoints`.
 
+Durante o treino, a secao `generation` controla amostras periodicas de texto:
+
+- `enabled`: `true` para gerar texto durante treino/re-treino, `false` para desligar.
+- `interval_epochs`: gera a cada N epochs.
+- `prompt`: texto inicial usado para acompanhar o andamento.
+- `max_new_tokens`: quantidade de tokens gerados.
+- `temperature`: aleatoriedade da geracao.
+
 4. Inferencia
 
 ```bash
@@ -66,3 +74,14 @@ O re-treino usa a arquitetura e hiperparametros do `config.yaml`, carrega os pes
 Se o arquivo `.pth` tiver apenas pesos do modelo, o treinamento continua a partir desses pesos, mas o otimizador comeca do zero.
 
 Os scripts novos salvam tambem `checkpoint_completo.pt`, que inclui pesos, otimizador e epoch. Esse formato e melhor para retomar o treino de forma mais fiel.
+
+
+## a
+
+```bash
+python3 wiki_scraper/main.py --config config.yaml
+python3 tokenizador/main.py --config config.yaml --stage all
+python3 treino/main.py --config config.yaml
+python3 inferencia/main.py --config config.yaml
+python3 re-treino/main.py --config config.yaml
+```
