@@ -14,10 +14,17 @@ import argparse
 import json
 import os
 import random
+import sys
+from pathlib import Path
 from typing import List, Tuple
 
 import numpy as np
 
+ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+from config import load_config, resolve_path
 from rustbpe import Tokenizer
 
 
@@ -99,7 +106,7 @@ def train_tokenizer(dataset_path: str, vocab_size: int, outdir: str) -> Tokenize
     return tok
 
 
-def tokenize_dataset(tok: Tokenizer, dataset_path: str, outdir: str, split_ratio: float = 0.1) -> None:
+def tokenize_dataset(tok: Tokenizer, dataset_path: str, outdir: str, split_ratio: float = 0.1) -> dict:
     # Read lines, encode each line, concatenate ids; split into train/val by lines
     train_ids: List[int] = []
     val_ids: List[int] = []
@@ -119,7 +126,15 @@ def tokenize_dataset(tok: Tokenizer, dataset_path: str, outdir: str, split_ratio
 
     # Save as raw uint32 binary
     np.array(train_ids, dtype=np.uint32).tofile(os.path.join(outdir, "train.bin"))
-    #np.array(val_ids, dtype=np.uint32).tofile(os.path.join(outdir, "val.bin"))
+    np.array(val_ids, dtype=np.uint32).tofile(os.path.join(outdir, "val.bin"))
+    return {
+        "dataset_path": dataset_path,
+        "train_bin_path": os.path.join(outdir, "train.bin"),
+        "val_bin_path": os.path.join(outdir, "val.bin"),
+        "train_tokens": len(train_ids),
+        "val_tokens": len(val_ids),
+        "split_ratio": split_ratio,
+    }
 
 
 def encode_text(tok: Tokenizer, text: str) -> List[int]:
@@ -130,90 +145,49 @@ def decode_ids(tok: Tokenizer, ids: List[int]) -> str:
     return tok.decode(ids)
 
 
-# def main():
-#     parser = argparse.ArgumentParser(description="BPE pipeline using rustbpe")
-#     parser.add_argument("--dataset", default="dataset.txt")
-#     parser.add_argument("--outdir", default="artifacts")
-#     parser.add_argument("--vocab-size", type=int, default=5000)
-#     parser.add_argument("--run", choices=["all", "train", "tokenize", "infer"], default="all")
-#     args = parser.parse_args()
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Treina BPE e gera train.bin/val.bin.")
+    parser.add_argument("--config", default="config.yaml")
+    parser.add_argument(
+        "--stage",
+        choices=["all", "train-bpe", "tokenize"],
+        default="all",
+        help="Use all para treinar BPE e tokenizar em uma unica execucao.",
+    )
+    args = parser.parse_args()
 
-#     if args.run in ("all", "train"):
-#         print("Training tokenizer...")
-#         tok = train_tokenizer(args.dataset, args.vocab_size, args.outdir)
-#     else:
-#         # If not training, still create a Tokenizer instance and try to load ranks if present
-#         tok = Tokenizer()
-#         ranks_file = os.path.join(args.outdir, "tokenizer_ranks.json")
-#         if os.path.exists(ranks_file):
-#             with open(ranks_file, "r", encoding="utf8") as f:
-#                 ranks = json.load(f)
-#             # ranks: list of (hex, id)
-#             # call get_mergeable_ranks is preferable; if not available, skip
-#             try:
-#                 _ = tok.get_mergeable_ranks()
-#             except Exception:
-#                 pass
+    config = load_config(args.config)
+    tokenizer_config = config["tokenizer"]
 
-#     if args.run in ("all", "tokenize"):
-#         print("Tokenizing dataset and writing train/val binaries...")
-#         tokenize_dataset(tok, args.dataset, args.outdir)
+    bpe_dataset_path = resolve_path(tokenizer_config["bpe_dataset_path"])
+    model_dataset_path = resolve_path(tokenizer_config["model_dataset_path"])
+    artifacts_dir = resolve_path(tokenizer_config["artifacts_dir"])
+    dataset_dir = resolve_path(tokenizer_config["dataset_dir"])
+    split_ratio = float(tokenizer_config.get("split_ratio", 0.1))
+    seed = int(tokenizer_config.get("seed", 42))
 
-#     if args.run in ("all", "infer"):
-#         # Demonstrate encode/decode
-#         samples = ["Hello world!", "Exemplo de tokenização em português."]
-#         for s in samples:
-#             ids = encode_text(tok, s)
-#             text = decode_ids(tok, ids)
-#             print("Sample:", s)
-#             print("Encoded len:", len(ids), "First ids:", ids[:20])
-#             print("Decoded:", text)
+    random.seed(seed)
+
+    tokenizer = None
+    if args.stage in {"all", "train-bpe", "tokenize"}:
+        print(f"Treinando BPE com: {bpe_dataset_path}")
+        tokenizer = train_tokenizer(
+            str(bpe_dataset_path),
+            int(tokenizer_config["vocab_size"]),
+            str(artifacts_dir),
+        )
+        print(f"Artifacts do BPE salvos em: {artifacts_dir}")
+
+    if args.stage in {"all", "tokenize"}:
+        print(f"Tokenizando dados do modelo: {model_dataset_path}")
+        metadata = tokenize_dataset(tokenizer, str(model_dataset_path), str(dataset_dir), split_ratio)
+        metadata["vocab_size"] = int(tokenizer_config["vocab_size"])
+        metadata_path = dataset_dir / "metadata.json"
+        with metadata_path.open("w", encoding="utf8") as file:
+            json.dump(metadata, file, ensure_ascii=False, indent=2)
+        print(f"train.bin/val.bin salvos em: {dataset_dir}")
+        print(f"Metadata salva em: {metadata_path}")
 
 
 if __name__ == "__main__":
-    #main()
-
-    # Treino do tokenizer ======================
-    DATASET_PATH = "./dadosBrutos/dados_training_bpe.txt"
-    VOCAB_SIZE = 5000
-    OUTDIR = "artifacts"
-
-    tokenizer = train_tokenizer(DATASET_PATH, VOCAB_SIZE, OUTDIR)
-
-    #print("Mergeable ranks:", tokenizer.get_mergeable_ranks())
-    print("Sample encoding:", tokenizer.encode("hello world"))
-    print()
-    print("Sample decoding:", tokenizer.decode(tokenizer.encode("olá mundo")))
-
-    print()
-
-    # Tokenização do dataset ==========================
-    OUTDIR_TOKENIZER = "dataset"
-    DATASET_PATH_TRAIN = "./dadosBrutos/dados_training_modelo.txt"
-
-    tokenize_dataset(tokenizer, DATASET_PATH_TRAIN, OUTDIR_TOKENIZER)
-
-    print("Tokenization complete. Train/val binaries saved in", OUTDIR_TOKENIZER)
-
-    # Encode e decode de exemplo ========================
-
-    text_sample = "Exemplo de tokenização em português."
-    encoded_ids = tokenizer.encode(text_sample)
-    decoded_text = tokenizer.decode(encoded_ids)
-
-    print("Original text:", text_sample)
-    print("Encoded IDs:", encoded_ids)
-    print("Decoded text:", decoded_text)
-
-    
-
-
-
-
-
-    # tokenizer = Tokenizer()
-
-    # tokenizer.train_from_iterator(["hello world", "hello rustbpe", "hello tokenizer"], vocab_size=256)
-
-   # print("Mergeable ranks:", tokenizer.get_mergeable_ranks())
-
+    main()

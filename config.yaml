@@ -1,0 +1,56 @@
+project:
+  name: pipeline-training-2
+
+scraper:
+  lang: pt
+  articles_file: wiki_scraper/list.txt
+  output_dir: wiki_scraper/dataset
+  use_article_filename: false
+
+tokenizer:
+  bpe_dataset_path: tokenizador/dadosBrutos/dados_training_bpe.txt
+  model_dataset_path: tokenizador/dadosBrutos/dados_training_modelo.txt
+  vocab_size: 5000
+  artifacts_dir: tokenizador/artifacts
+  dataset_dir: tokenizador/dataset
+  train_bin_path: tokenizador/dataset/train.bin
+  val_bin_path: tokenizador/dataset/val.bin
+  split_ratio: 0.1
+  seed: 42
+
+model:
+  vocab_size: auto
+  embedding_dim: 128
+  num_heads: 4
+  num_layers: 3
+  max_seq_len: 128
+  ffn_dim: 512
+  seq_len: 128
+  model_save_path: treino/checkpoints/encoder.pth
+  config_save_path: treino/checkpoints/config.json
+  full_checkpoint_path: treino/checkpoints/checkpoint_completo.pt
+
+training:
+  batch_size: 8
+  num_epochs: 50
+  learning_rate: 0.0005
+  device: auto
+  seed: 42
+  num_workers: 2
+  regenerate_tokenizer_and_dataset: false
+
+inference:
+  config_path: treino/checkpoints/config.json
+  max_new_tokens: 20
+  temperature: 0.8
+  delay: 0.04
+
+retraining:
+  input_dir: re-treino/entrada
+  output_dir: re-treino/checkpoints
+  checkpoint_name: encoder.pth
+  config_name: config.json
+  train_bin_name: train.bin
+  vocab_name: vocab.json
+  model_save_name: encoder_retreinado.pth
+  full_checkpoint_name: checkpoint_completo.pt

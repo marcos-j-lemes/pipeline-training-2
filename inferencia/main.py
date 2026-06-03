@@ -5,6 +5,7 @@ import json
 import sys
 import time
 from pathlib import Path
+from typing import Any
 
 import torch
 import torch.nn.functional as F
@@ -13,19 +14,45 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
+from config import load_config as load_project_config
+from config import model_config as project_model_config
+from config import resolve_path
 from modelo.encoder import Encoder_model
 
 
-def resolve_project_path(path: str) -> Path:
-    candidate = Path(path)
-    if candidate.is_absolute():
-        return candidate
-    return ROOT_DIR / candidate
-
-
-def load_config(path: Path) -> dict:
+def load_config(path: Path) -> dict[str, Any]:
+    if path.suffix in {".yaml", ".yml"}:
+        return load_project_config(path)
     with path.open("r", encoding="utf8") as file:
         return json.load(file)
+
+
+def normalize_config(config: dict[str, Any]) -> tuple[dict[str, Any], Path, Path]:
+    if "model" in config:
+        model_settings = project_model_config(config)
+        model_path = resolve_path(model_settings["model_save_path"])
+        vocab_path = resolve_path(config["tokenizer"]["artifacts_dir"]) / "vocab.json"
+        return model_settings, model_path, vocab_path
+
+    model_settings = config["modelo"]
+    model_path = resolve_path(model_settings["model_save_path"])
+    vocab_path = resolve_path(config["tokenizer"]["outdir"]) / "vocab.json"
+    return model_settings, model_path, vocab_path
+
+
+def torch_load(path: Path, device: torch.device) -> Any:
+    try:
+        return torch.load(path, map_location=device, weights_only=False)
+    except TypeError:
+        return torch.load(path, map_location=device)
+
+
+def load_model_weights(model: Encoder_model, model_path: Path, device: torch.device) -> None:
+    checkpoint = torch_load(model_path, device)
+    if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
+        model.load_state_dict(checkpoint["model_state_dict"])
+        return
+    model.load_state_dict(checkpoint)
 
 
 def load_vocab(path: Path) -> dict[int, str]:
@@ -153,7 +180,7 @@ def chat_loop(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Chat simples no terminal com o modelo treinado.")
-    parser.add_argument("--config", default="treino/checkpoints/config.json")
+    parser.add_argument("--config", default="config.yaml")
     parser.add_argument("--prompt-ids", default=None)
     parser.add_argument("--once", default=None, help="Executa uma unica resposta para o texto informado.")
     parser.add_argument("--max-new-tokens", type=int, default=20)
@@ -161,8 +188,8 @@ def main() -> None:
     parser.add_argument("--delay", type=float, default=0.04)
     args = parser.parse_args()
 
-    config = load_config(resolve_project_path(args.config))
-    model_config = config["modelo"]
+    config = load_config(resolve_path(args.config))
+    model_config, model_path, vocab_path = normalize_config(config)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     model = Encoder_model(
@@ -173,10 +200,8 @@ def main() -> None:
         max_seq_len=int(model_config["max_seq_len"]), # 
         ffn_dim=int(model_config["ffn_dim"]),
     ).to(device)
-    model_path = resolve_project_path(model_config["model_save_path"])
-    model.load_state_dict(torch.load(model_path, map_location=device))
+    load_model_weights(model, model_path, device)
 
-    vocab_path = resolve_project_path(config["tokenizer"]["outdir"]) / "vocab.json"
     vocab = load_vocab(vocab_path)
     seq_len = int(model_config["seq_len"])
     valid_token_ids = torch.tensor(sorted(vocab), dtype=torch.long, device=device)

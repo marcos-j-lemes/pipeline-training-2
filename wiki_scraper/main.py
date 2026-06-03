@@ -19,6 +19,12 @@ import urllib.error
 from html.parser import HTMLParser
 from pathlib import Path
 
+ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+from config import load_config, resolve_path
+
 # ─── DEFAULT SETTINGS ────────────────────────────────────────────────────────
 
 DEFAULT_LANG = "pt"           # Wikipedia language subdomain (pt, en, es, …)
@@ -309,13 +315,13 @@ def main():
     )
     parser.add_argument(
         "--lang",
-        default=DEFAULT_LANG,
+        default=None,
         metavar="LANG",
         help=f"Wikipedia language code (default: {DEFAULT_LANG})",
     )
     parser.add_argument(
         "--output-dir",
-        default=DEFAULT_OUTPUT_DIR,
+        default=None,
         metavar="DIR",
         help=f"Directory to save .txt files (default: {DEFAULT_OUTPUT_DIR})",
     )
@@ -324,15 +330,23 @@ def main():
         action="store_true",
         help="Use the article name as the output filename instead of the title"
     )
+    parser.add_argument("--config", default="config.yaml")
 
     args = parser.parse_args()
-    output_dir = Path(args.output_dir)
+    config = load_config(args.config)
+    scraper_config = config.get("scraper", {})
+    lang = args.lang or scraper_config.get("lang", DEFAULT_LANG)
+    input_file = args.input_file
+    if not input_file and not args.articles:
+        input_file = scraper_config.get("articles_file")
+    output_dir = resolve_path(args.output_dir or scraper_config.get("output_dir", DEFAULT_OUTPUT_DIR))
+    use_article_filename = args.filename or bool(scraper_config.get("use_article_filename", False))
     output_dir.mkdir(parents=True, exist_ok=True)
 
     try:
         articles = list(args.articles)
-        if args.input_file:
-            articles.extend(read_article_list(args.input_file))
+        if input_file:
+            articles.extend(read_article_list(str(resolve_path(input_file))))
     except ValueError as e:
         print(f"ERROR: {e}", file=sys.stderr)
         sys.exit(1)
@@ -345,7 +359,7 @@ def main():
     for article in articles:
         print(f"\n[+] {article}")
         try:
-            out = scrape(article, args.lang, output_dir, args.filename)
+            out = scrape(article, lang, output_dir, use_article_filename)
             print(f"  Saved -> {out}")
             success += 1
         except (ValueError, RuntimeError) as e:
