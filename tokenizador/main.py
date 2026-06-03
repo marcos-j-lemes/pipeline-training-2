@@ -25,10 +25,11 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from config import load_config, resolve_path
-from rustbpe import Tokenizer
 
 
-def train_tokenizer(dataset_path: str, vocab_size: int, outdir: str) -> Tokenizer:
+def train_tokenizer(dataset_path: str, vocab_size: int, outdir: str):
+    from rustbpe import Tokenizer
+
     tok = Tokenizer()
     # train_from_iterator aceita qualquer iterável Python; usar streaming por linhas
     with open(dataset_path, "r", encoding="utf8") as f:
@@ -106,7 +107,7 @@ def train_tokenizer(dataset_path: str, vocab_size: int, outdir: str) -> Tokenize
     return tok
 
 
-def tokenize_dataset(tok: Tokenizer, dataset_path: str, outdir: str, split_ratio: float = 0.1) -> dict:
+def tokenize_dataset(tok, dataset_path: str, outdir: str, split_ratio: float = 0.1) -> dict:
     # Read lines, encode each line, concatenate ids; split into train/val by lines
     train_ids: List[int] = []
     val_ids: List[int] = []
@@ -137,11 +138,11 @@ def tokenize_dataset(tok: Tokenizer, dataset_path: str, outdir: str, split_ratio
     }
 
 
-def encode_text(tok: Tokenizer, text: str) -> List[int]:
+def encode_text(tok, text: str) -> List[int]:
     return tok.encode(text)
 
 
-def decode_ids(tok: Tokenizer, ids: List[int]) -> str:
+def decode_ids(tok, ids: List[int]) -> str:
     return tok.decode(ids)
 
 
